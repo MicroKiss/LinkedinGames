@@ -3,6 +3,7 @@ import InputForm from './components/InputForm'
 import GameStats from './components/GameStats'
 import { useEffect, useState } from 'react';
 import type { AllGameStats } from './types/Types';
+import useApi from './ApiService/useApi';
 
 
 const exampleRecords = [
@@ -15,6 +16,25 @@ const exampleRecords = [
 
 
 function App() {
+  const api = useApi();
+  const [isBackendAvailable, setIsBackendAvailable] = useState<boolean>(false);
+
+  useEffect(() => {
+    const checkBackend = async () => {
+      try {
+        const available = await api.checkHealth();
+        setIsBackendAvailable(available);
+        console.log('Backend health check:', available ? 'Success' : 'Failed');
+      } catch (error) {
+        console.error('Backend health check error:', error);
+        setIsBackendAvailable(false);
+      }
+    };
+    checkBackend();
+  }, [api]);
+
+
+
   const [stats, setStats] = useState<AllGameStats>({
     zip: {
       records: exampleRecords
@@ -47,6 +67,9 @@ function App() {
 
   return (
     <>
+      <div style={{ marginBottom: '20px', fontSize: '18px', fontWeight: 'bold' }}>
+        {isBackendAvailable ? '🟢 Connected to backend' : '🔴 Using offline mode'}
+      </div>
       <InputForm onSubmit={handleNewSubmit} />
       <GameStats stats={stats} names={names} />
     </>

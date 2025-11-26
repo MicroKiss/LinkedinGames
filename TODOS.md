@@ -3,7 +3,7 @@
 
 # FE
 - all 4 games
-- charst
+- charts
 
 
 # Backend:
