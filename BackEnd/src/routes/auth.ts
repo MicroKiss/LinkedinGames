@@ -32,7 +32,7 @@ router.post("/register", async (req, res) => {
     });
   }
   const exists = await db.User.findOne({ where: { username } });
-  if (exists) return res.status(400).json({ error: "User already exists" });
+  if (exists) return res.status(409).json({ error: "User already exists" });
 
   const hashed = await bcrypt.hash(password, 10);
 
@@ -78,9 +78,6 @@ router.post("/login", async (req, res) => {
   const access = createAccessToken({ name: user.name });
   const refresh = createRefreshToken({ name: user.name });
 
-  // TODO: Verify user credentials against database
-  // TODO: Hash comparison for password
-  // TODO: Generate JWT token
   // TODO: Handle password reset logic
 
   res.cookie("refreshToken", refresh, {
