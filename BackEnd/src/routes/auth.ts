@@ -6,7 +6,7 @@ import {
 } from "../utils/jwt";
 import cookieParser from "cookie-parser";
 import db from "../database/models";
-const crypto = require("crypto");
+import bcrypt from "bcrypt";
 
 const router = Router();
 router.use(cookieParser());
@@ -34,7 +34,7 @@ router.post("/register", async (req, res) => {
   const exists = await db.User.findOne({ where: { username } });
   if (exists) return res.status(400).json({ error: "User already exists" });
 
-  const hashed = password; // TODO: Hash the password before storing
+  const hashed = await bcrypt.hash(password, 10);
 
   console.log("Registration attempt:", { username });
   const user = await db.User.create({
@@ -42,11 +42,6 @@ router.post("/register", async (req, res) => {
     username: username,
     password: hashed,
   });
-
-  // TODO: Add proper validation (email format, password strength, etc.)
-  // TODO: Hash password before storing
-  // TODO: Check if user already exists
-  // TODO: Store user in database
 
   res.status(201).json({
     success: true,
@@ -59,7 +54,6 @@ router.post("/register", async (req, res) => {
   });
 });
 
-// Login endpoint
 router.post("/login", async (req, res) => {
   if (!req.body) {
     return res.status(400).json({ error: "Missing request body" });
@@ -78,7 +72,7 @@ router.post("/login", async (req, res) => {
   const user = await db.User.findOne({ where: { username } });
   if (!user) return res.status(400).json({ error: "Invalid credentials" });
 
-  const valid = password === user.password; // TODO: Compare hashed passwords
+  const valid = await bcrypt.compare(password, user.password);
   if (!valid) return res.status(400).json({ error: "Invalid credentials" });
 
   const access = createAccessToken({ name: user.name });
