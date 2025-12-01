@@ -9,9 +9,4 @@ router.get('/', authRequired, async (req, res) => {
   res.json(users);
 });
 
-router.post('/', authRequired ,async (req, res) => {
-  const user = await db.User.create(req.body);
-  res.json(user);
-});
-
 export default router;
