@@ -29,7 +29,7 @@
             "type": "shell",
             "command": "node",
             "args": [
-                "app.js"
+                "dist/app.js"
             ],
             "options": {
                 "cwd": "${workspaceFolder}/BackEnd"

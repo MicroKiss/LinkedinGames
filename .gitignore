@@ -50,3 +50,7 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# Datbase files
+*.sqlite
+*.sqlite3
