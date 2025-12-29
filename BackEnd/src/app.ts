@@ -1,15 +1,17 @@
 import express, { json } from 'express';
+import { setupSwagger } from "./swagger";
 import corsMiddleware from './middleware/cors';
 import authRoutes from './routes/auth';
 import userRoutes from './routes/users';
 import recordRoutes from './routes/records'
 
 const app = express()
+setupSwagger(app);
 const port = 5000
 
 app.use(corsMiddleware);
 
-app.use(json());4
+app.use(json());
 
 // Mount auth routes
 app.use('/auth', authRoutes);

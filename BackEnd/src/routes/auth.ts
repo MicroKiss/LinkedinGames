@@ -25,7 +25,7 @@ router.post("/register", async (req, res) => {
   const { username, name, password } = req.body;
 
   // Basic validation
-  if (!username || !name || !password ) {
+  if (!username || !name || !password) {
     return res.status(400).json({
       success: false,
       message: "Username, name and password are required",
@@ -54,12 +54,79 @@ router.post("/register", async (req, res) => {
   });
 });
 
+/**
+ * @swagger
+ * /auth/login:
+ *   post:
+ *     summary: User login
+ *     description: Authenticate user with username and password. Returns access token and sets refresh token in secure HTTP-only cookie.
+ *     tags:
+ *       - Authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - username
+ *               - password
+ *             properties:
+ *               username:
+ *                 type: string
+ *                 example: johndoe
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 example: SecurePassword123
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Login successful
+ *                 user:
+ *                   type: string
+ *                   example: John Doe
+ *                 token:
+ *                   type: string
+ *                   example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+ *         headers:
+ *           Set-Cookie:
+ *             schema:
+ *               type: string
+ *               example: refreshToken=abcd1234; Path=/auth/refresh; HttpOnly; SameSite=Lax
+ *       400:
+ *         description: Invalid credentials or missing request body
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Username and password are required
+ *                 error:
+ *                   type: string
+ *                   example: Invalid credentials
+ */
 router.post("/login", async (req, res) => {
   if (!req.body) {
     return res.status(400).json({ error: "Missing request body" });
   }
   const { username, password } = req.body;
-  
+
   // Basic validation
   if (!username || !password) {
     return res.status(400).json({
@@ -115,7 +182,7 @@ router.post("/refresh", async (req, res) => {
 router.post("/logout", (req, res) => {
   res.clearCookie("refreshToken", {
     httpOnly: true,
-    path: "/auth/refresh"
+    path: "/auth/refresh",
   });
 
   return res.status(200).json({ succes: true });
