@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 const { Record } = require("../database/models");
 import db from "../database/models";
+import { UniqueConstraintError } from "sequelize";
 
 export const getRecordById = async (req: Request, res: Response) => {
   try {
@@ -43,6 +44,37 @@ export const getRecordsByGameId = async (req: Request, res: Response) => {
     res.json(records);
   } catch (err) {
     console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const createRecord = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    if (req.body.gameId == null || req.body.time == null) {
+      return res.status(400).json({ message: "GameId and time are required" });
+    }
+    if (typeof req.body.time !== "number" || req.body.time <= 0) {
+      return res
+        .status(400)
+        .json({ message: "Time must be a positive number" });
+    }
+    const newRecord = await Record.create({
+      userId: req.user.id,
+      gameId: req.body.gameId,
+      time: req.body.time,
+      date: Date.now(),
+    });
+    res.status(201).json(newRecord);
+  } catch (err) {
+    console.error(err);
+    if (err instanceof UniqueConstraintError) {
+      return res.status(409).json({
+        message: "Record already exists for this game for today",
+      });
+    }
     res.status(500).json({ message: "Server error" });
   }
 };

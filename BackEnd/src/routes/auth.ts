@@ -126,7 +126,7 @@ router.post("/login", async (req, res) => {
     return res.status(400).json({ error: "Missing request body" });
   }
   const { username, password } = req.body;
-
+  
   // Basic validation
   if (!username || !password) {
     return res.status(400).json({
@@ -142,8 +142,8 @@ router.post("/login", async (req, res) => {
   const valid = await bcrypt.compare(password, user.password);
   if (!valid) return res.status(400).json({ error: "Invalid credentials" });
 
-  const access = createAccessToken({ name: user.name });
-  const refresh = createRefreshToken({ name: user.name });
+  const access = createAccessToken({ id: user.id });
+  const refresh = createRefreshToken({ id: user.id });
 
   // TODO: Handle password reset logic
 
