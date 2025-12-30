@@ -1,19 +1,31 @@
 import { Request, Response } from "express";
-const { User } = require('../database/models');
+const { User } = require("../database/models");
+
+export const getAllUsers = async (req: Request, res: Response) => {
+  try {
+    const users = await User.findAll({ attributes: { exclude: ["password"] } });
+    res.json(users);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
 
 export const getUserById = async (req: Request, res: Response) => {
-    try {
-      const { id } = req.params;
+  try {
+    const { id } = req.params;
 
-      const user = await User.findByPk(id);
+    const user = await User.findByPk(id, {
+      attributes: { exclude: ["password"] },
+    });
 
-      if (!user) {
-        return res.status(404).json({ error: 'User not found' });
-      }
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
 
-      res.json(user);
-    } catch (err) {
-      console.error(err);
-    res.status(500).json({ error: 'Server error' });
+    res.json(user);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
   }
-}
+};
