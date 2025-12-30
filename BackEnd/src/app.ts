@@ -1,20 +1,23 @@
 import express, { json } from 'express';
-import { setupSwagger } from "./swagger";
+import { swaggerUi, swaggerDocument } from "./swagger";
 import corsMiddleware from './middleware/cors';
 import authRoutes from './routes/auth';
 import userRoutes from './routes/users';
 import recordRoutes from './routes/records'
 
 const app = express()
-setupSwagger(app);
 const port = 5000
+
+app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.use(corsMiddleware);
 
 app.use(json());
 
-// Mount auth routes
+// Mount routes
 app.use('/auth', authRoutes);
+app.use('/users', userRoutes);
+app.use('/records', recordRoutes);
 
 app.get('/', (req, res) => {
     res.send('Hello World!')
@@ -27,9 +30,9 @@ app.get('/api/health', (req, res) => {
     })
 })
 
-app.use('/users', userRoutes);
-app.use('/records', recordRoutes);
 
 app.listen(port, () => {
     console.log(`Example app listening on port ${port}`)
+    console.log('Swagger docs available at /docs');
+    
 })

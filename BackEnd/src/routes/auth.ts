@@ -16,15 +16,9 @@ router.post("/register", async (req, res) => {
   if (!req.body) {
     return res.status(400).json({ error: "Missing request body" });
   }
-  // if (!req.body.username || !req.body.password) {
-  //   return res
-  //     .status(400)
-  //     .json({ error: "Username and password are required" });
-  // }
 
   const { username, name, password } = req.body;
 
-  // Basic validation
   if (!username || !name || !password) {
     return res.status(400).json({
       success: false,
@@ -37,110 +31,46 @@ router.post("/register", async (req, res) => {
   const hashed = await bcrypt.hash(password, 10);
 
   console.log("Registration attempt:", { username });
-  const user = await db.User.create({
-    name: name,
-    username: username,
-    password: hashed,
-  });
-
-  res.status(201).json({
-    success: true,
-    message: "User registered successfully",
-    user: {
-      id: user.id,
-      name: user.name,
-      username: user.username,
-    },
-  });
+  try {
+    const user = await db.User.create({
+      name: name,
+      username: username,
+      password: hashed,
+    });
+    return res.status(201).json({
+      success: true,
+      message: "User registered successfully",
+      user: {
+        id: user.id,
+        name: user.name,
+        username: user.username,
+      },
+    });
+  } catch (err) {
+    console.error("Registration error:", err);
+    return res.status(500).json({ error: "Server error" });
+  }
 });
 
-/**
- * @swagger
- * /auth/login:
- *   post:
- *     summary: User login
- *     description: Authenticate user with username and password. Returns access token and sets refresh token in secure HTTP-only cookie.
- *     tags:
- *       - Authentication
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - username
- *               - password
- *             properties:
- *               username:
- *                 type: string
- *                 example: johndoe
- *               password:
- *                 type: string
- *                 format: password
- *                 example: SecurePassword123
- *     responses:
- *       200:
- *         description: Login successful
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Login successful
- *                 user:
- *                   type: string
- *                   example: John Doe
- *                 token:
- *                   type: string
- *                   example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
- *         headers:
- *           Set-Cookie:
- *             schema:
- *               type: string
- *               example: refreshToken=abcd1234; Path=/auth/refresh; HttpOnly; SameSite=Lax
- *       400:
- *         description: Invalid credentials or missing request body
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 message:
- *                   type: string
- *                   example: Username and password are required
- *                 error:
- *                   type: string
- *                   example: Invalid credentials
- */
 router.post("/login", async (req, res) => {
   if (!req.body) {
     return res.status(400).json({ error: "Missing request body" });
   }
   const { username, password } = req.body;
-  
-  // Basic validation
+
   if (!username || !password) {
     return res.status(400).json({
       success: false,
-      message: "Username and password are required",
+      error: "Username and password are required",
     });
   }
 
   console.log("Login attempt:", { username });
   const user = await db.User.findOne({ where: { username } });
-  if (!user) return res.status(400).json({ error: "Invalid credentials" });
+  if (!user) return res.status(401).json({ error: "Invalid credentials" });
 
   const valid = await bcrypt.compare(password, user.password);
-  if (!valid) return res.status(400).json({ error: "Invalid credentials" });
+  if (!valid) return res.status(401).json({ error: "Invalid credentials" });
 
   const access = createAccessToken({ id: user.id });
   const refresh = createRefreshToken({ id: user.id });
@@ -149,7 +79,7 @@ router.post("/login", async (req, res) => {
 
   res.cookie("refreshToken", refresh, {
     httpOnly: true,
-    secure: false, // Set to true in production
+    secure: false, // TODO: Set to true when deployed
     sameSite: "lax",
     path: "/auth/refresh",
   });

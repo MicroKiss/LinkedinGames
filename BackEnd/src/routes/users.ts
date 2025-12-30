@@ -5,6 +5,7 @@ import { getUserById } from '../controllers/UserController';
 
 
 const router = Router();
+
 router.get('/', authRequired, async (req, res) => {
   const users = await db.User.findAll();
   res.json(users);

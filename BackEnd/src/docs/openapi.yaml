@@ -1,0 +1,197 @@
+openapi: "3.0.0"
+info:
+  title: "LinkedInGames API"
+  version: "1.0.0"
+  description: "API for storing and retrieving game solve times"
+
+servers:
+  - url: "http://localhost:5000"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: "http"
+      scheme: "bearer"
+      bearerFormat: "JWT"
+
+  schemas:
+    Record:
+      type: object
+      required:
+        - id
+        - userId
+        - gameId
+        - time
+        - date
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        gameId:
+          type: integer
+        time:
+          type: number
+          example: 53.42
+        date:
+          type: string
+          example: "2024-06-15"
+          format: date
+
+    Game:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        username:
+          type: string
+        password:
+          type: string
+
+tags:
+  - name: Auth
+    description: Authentication and session handling
+  - name: Users
+    description: User management
+  - name: Records
+    description: Game solve time records
+  - name: Games
+    description: Game metadata
+
+security:
+  - bearerAuth: []
+
+paths:
+  /records:
+    get:
+      tags:
+        - Records
+      summary: "Get all records"
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: "A list of records"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Record"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Missing Authorization header
+    post:
+      tags:
+        - Records
+      summary: "Create a new record"
+      security:
+        - bearerAuth: []
+      responses:
+        "201":
+          description: "Record created successfully"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Record"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Missing Authorization header
+  /auth/login:
+    post:
+      summary: User login
+      description: Authenticate user with username and password. Returns access token and sets refresh token in secure HTTP-only cookie.
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  example: foo
+                password:
+                  type: string
+                  format: password
+                  example: bar123
+      responses:
+        200:
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Login successful
+                  user:
+                    type: string
+                    example: foo
+                  token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: refreshToken=abcd1234; HttpOnly; SameSite=Lax
+        400:
+          description: Missing credentials or missing request body
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: Username and password are required
+        401:
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: Invalid credentials
