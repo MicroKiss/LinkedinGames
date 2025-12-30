@@ -26,7 +26,10 @@ router.post("/register", async (req, res) => {
     });
   }
   const exists = await db.User.findOne({ where: { username } });
-  if (exists) return res.status(409).json({ error: "User already exists" });
+  if (exists)
+    return res
+      .status(409)
+      .json({ success: false, error: "User already exists" });
 
   const hashed = await bcrypt.hash(password, 10);
 
@@ -103,7 +106,7 @@ router.post("/refresh", async (req, res) => {
     if (!user) throw new Error("No user");
 
     const access = createAccessToken({ id: user.id });
-    res.json({ access });
+    res.status(200).json({ token: access });
   } catch (err) {
     res.status(403).json({ error: "Invalid refresh token" });
   }

@@ -8,12 +8,12 @@ export const getGameById = async (req: Request, res: Response) => {
     const user = await Game.findByPk(id);
 
     if (!user) {
-      return res.status(404).json({ message: "Game not found" });
+      return res.status(404).json({ error: "Game not found" });
     }
 
     res.json(user);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ error: "Server error" });
   }
 };
