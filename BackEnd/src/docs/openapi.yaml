@@ -13,6 +13,10 @@ components:
       type: "http"
       scheme: "bearer"
       bearerFormat: "JWT"
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: refreshToken
 
   schemas:
     Record:
@@ -32,7 +36,7 @@ components:
           type: integer
         time:
           type: number
-          example: 53.42
+          example: 15
         date:
           type: string
           example: "2024-06-15"
@@ -55,8 +59,17 @@ components:
           type: string
         username:
           type: string
-        password:
-          type: string
+
+  responses:
+    UnauthorizedError:
+      description: Unauthorized (missing, invalid, or expired token)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
 
 tags:
   - name: Auth
@@ -89,21 +102,30 @@ paths:
                 items:
                   $ref: "#/components/schemas/Record"
         "401":
-          description: "Unauthorized"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: Missing Authorization header
+          $ref: "#/components/responses/UnauthorizedError"
+
     post:
       tags:
         - Records
       summary: "Create a new record"
       security:
         - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - gameId
+                - time
+              properties:
+                gameId:
+                  type: integer
+                  example: 2
+                time:
+                  type: integer
+                  example: 15
       responses:
         "201":
           description: "Record created successfully"
@@ -111,8 +133,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Record"
-        "401":
-          description: "Unauthorized"
+        "409":
+          description: "Record already exists for this user and game for today"
           content:
             application/json:
               schema:
@@ -120,7 +142,80 @@ paths:
                 properties:
                   error:
                     type: string
-                    example: Missing Authorization header
+                    example: "Record already exists for this user and game for today"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  /records/{id}:
+    get:
+      summary: "Get record by ID"
+      description: "Get a specific record by its ID"
+      tags:
+        - Records
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: "Record found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Record"
+        "404":
+          description: "Record not found"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Record not found"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  /records/game/{id}:
+    get:
+      summary: "Get all records by gameId"
+      description: "Get all records for a specific game"
+      tags:
+        - Records
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: "Record found"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Record"
+        "404":
+          description: "Record not found"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Records not found"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
   /auth/login:
     post:
       summary: User login
@@ -183,7 +278,39 @@ paths:
                     type: string
                     example: Username and password are required
         401:
-          description: Invalid credentials
+          $ref: "#/components/responses/UnauthorizedError"
+
+  /auth/register:
+    post:
+      summary: "Register a new user"
+      description: "Create a new user account with username, name, and password."
+      tags:
+        - Auth
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - username
+                - password
+              properties:
+                name:
+                  type: string
+                  example: foobar
+                username:
+                  type: string
+                  example: foo
+                password:
+                  type: string
+                  format: password
+                  example: bar123
+      responses:
+        "400":
+          description: Missing request body / missing fields
           content:
             application/json:
               schema:
@@ -194,4 +321,117 @@ paths:
                     example: false
                   error:
                     type: string
-                    example: Invalid credentials
+                    example: Username, name and password are required
+        "409":
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: User already exists
+        "201":
+          description: Succesfull registration
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  user:
+                    $ref: "#/components/schemas/User"
+
+  /auth/refresh:
+    post:
+      summary: "refresh session token"
+      description: "Refresh session token using refreshtoken from cookie"
+      tags:
+        - Auth
+      security:
+        - cookieAuth: []
+
+      responses:
+        "403":
+          description: Invalid refresh token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    example: "Invalid refresh token"
+        "200":
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+  /auth/logout:
+    post:
+      summary: "Logout user"
+      description: "Logout user by clearing refresh token cookie"
+      tags:
+        - Auth
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Logged out successfully"
+
+  /users:
+    get:
+      summary: "Get all users"
+      description: "Get all users"
+      tags:
+        - Users
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: "A list of users"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  /users/{id}:
+    get:
+      summary: "Get specific user"
+      description: "Get a specific user by ID"
+      tags:
+        - Users
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: "A user object"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
